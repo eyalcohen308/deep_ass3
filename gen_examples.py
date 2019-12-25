@@ -6,7 +6,6 @@ NEGATIVE_SEQUENCE_REGEX = r'[1-9]+a+[1-9]+c+[1-9]+b+[1-9]+d+[1-9]+'
 TRAIN_DIR = "train"
 DEV_DIR = "dev"
 TEST_DIR = "test"
-NUM_OF_EXAMPLES = 500
 
 
 def generate_sequence(reg_exp):
@@ -46,10 +45,16 @@ def create_dataset_file(file_name, positive_regex, negative_regex, num_of_sequen
 
 
 if __name__ == "__main__":
-	create_examples_file('pos_examples', POSITIVE_SEQUENCE_REGEX, NUM_OF_EXAMPLES)
-	create_examples_file('neg_examples', NEGATIVE_SEQUENCE_REGEX, NUM_OF_EXAMPLES)
+	import argparse
 
-	params = [POSITIVE_SEQUENCE_REGEX, NEGATIVE_SEQUENCE_REGEX, NUM_OF_EXAMPLES]
+	parser = argparse.ArgumentParser(description="Deep ex3")
+	parser.add_argument("--examples", help="number of examples in files", type=int, default=500)
+	args = parser.parse_args()
+	examples_num = args.examples
+	create_examples_file('pos_examples', POSITIVE_SEQUENCE_REGEX, examples_num)
+	create_examples_file('neg_examples', NEGATIVE_SEQUENCE_REGEX, examples_num)
+
+	params = [POSITIVE_SEQUENCE_REGEX, NEGATIVE_SEQUENCE_REGEX, examples_num]
 
 	create_dataset_file(TRAIN_DIR, *params)
 	create_dataset_file(DEV_DIR, *params)
