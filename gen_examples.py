@@ -9,11 +9,12 @@ TEST_DIR = "test"
 
 
 def generate_sequence(reg_exp):
-	word = Xeger(limit=sequence_limit)
+	current_seq = SEQUENCE_CHAR_LIMIT
+	word = Xeger(limit=current_seq)
 	word = word.xeger(reg_exp)
-	while len(word) > 100:
-		limit = limit - 2
-		word = Xeger(limit=limit)
+	while len(word) > SEQUENCE_LEN_LIMIT:
+		current_seq = current_seq - 2
+		word = Xeger(limit=current_seq)
 		word = word.xeger(reg_exp)
 	return word
 
@@ -48,11 +49,12 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description="Deep ex3")
 	parser.add_argument("--examples", help="set the number of examples in files", type=int, default=500)
-	parser.add_argument("--seq_size", help="set the max sequence size", type=int, default=25)
+	parser.add_argument("--seq_size", help="set the max sequence size", type=int, default=100)
 	args = parser.parse_args()
 	examples_num = args.examples
-	globals()['sequence_limit'] = args.seq_size
-
+	global SEQUENCE_LEN_LIMIT, SEQUENCE_CHAR_LIMIT
+	SEQUENCE_LEN_LIMIT = args.seq_size
+	SEQUENCE_CHAR_LIMIT = SEQUENCE_LEN_LIMIT // 4
 	create_examples_file('pos_examples', POSITIVE_SEQUENCE_REGEX, examples_num)
 	create_examples_file('neg_examples', NEGATIVE_SEQUENCE_REGEX, examples_num)
 
