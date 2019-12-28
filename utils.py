@@ -1,8 +1,11 @@
 import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
+import re
 
 UNKNOWN_CHAR = '*'
+# TODO: check what is unkown word.
+UNKNOWN_WORD = 'UUUKKKK'
 
 
 def tensorize_sentence(sentence, F2I):
@@ -20,7 +23,7 @@ def tensorize_sentence(sentence, F2I):
 	return tensor_vector
 
 
-def get_file_directory(data_kind):
+def get_part1_file_directory(data_kind):
 	"""
 	return the directory of the file from data directory.
 	:param data_kind: name of the data file
@@ -29,7 +32,18 @@ def get_file_directory(data_kind):
 	return "./data/{0}".format(data_kind)
 
 
-def parse_data_from_file_dir(data_dir, is_test=False):
+def get_part3_file_directory(data_kind, is_pos=True):
+	"""
+	return the directory of the file from data directory.
+	:param data_kind: name of the data file
+	:param is_pos weather is pos or ner.
+	:return: local directory.
+	"""
+	dir_name = "pos" if is_pos else "ner"
+	return "./data/{0}/{1}".format(dir_name, data_kind)
+
+
+def part1_parser(data_dir, is_test=False):
 	"""
 	Get's data directory, parse it's content with '\t' to sequence and tag.
 	if is_test is true, skip on creating tags.
@@ -48,3 +62,51 @@ def parse_data_from_file_dir(data_dir, is_test=False):
 		else:
 			data_set.append(sentence)
 	return data_set
+
+
+def pos_ner_parser(data_dir, data_name="pos", data_kind="train", to_lower=False, convert_digits=False):
+	"""
+	Get's data directory, parse it's content with '\t' to sequence and tag.
+	if is_test is true, skip on creating tags.
+	:param data_dir: data location.
+	:param data_kind: imply whether to tag or not.
+	:param data_name imply whether is pos or ner.
+	:param to_lower if lower case the letters
+	:param convert_digits if convert digits to '*DG*'
+	:return: dataset (sequence, [int tag])
+	"""
+	sentences_data_set = []
+	current_sentence_list = []
+	# parse by spaces if post, if ner parse by tab.
+	delimiter = ' ' if data_name == "pos" else '\t'
+	data_set = []
+	lines_list = open(data_dir).read().splitlines()
+	for line in lines_list:
+		raw_splitted = line.split(delimiter)
+		word = raw_splitted[0]
+		if word != '':
+			# convert all chars to lower case.
+			if to_lower:
+				word = word.lower()
+			# if we want to convert each digit to be DG for similarity, '300' = '400'.
+			if convert_digits:
+				word = re.sub('[0-9]', '*DG*', word)
+
+			if data_kind != "test":
+				tag = raw_splitted[1]
+				current_sentence_list.append((word, tag))
+			else:
+				current_sentence_list.append(word)
+		else:
+			# finished iterate over one single sentence:
+			sentences_data_set.append(current_sentence_list.copy())
+			# reset list for next sentence.
+			current_sentence_list.clear()
+	return sentences_data_set
+
+
+def make_loader(data, batch_size):
+	# split the tupled given data to x and y.
+	x, y = zip(*data)
+	x, y = torch.tensor(x), torch.tensor(y)
+	return DataLoader(TensorDataset(x, y), batch_size, shuffle=True)

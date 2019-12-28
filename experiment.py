@@ -60,7 +60,7 @@ def evaluate_accuracy(model, data, F2I, loss_function, epoch):
 
 	print('\n\n------ Dev | Finished epoch {0} ------'.format(epoch))
 	print('\tAcc:', good / len(data))
-	print('\tLoss\n', sum_loss / len(data))
+	print('\tLoss', sum_loss / len(data), "\n")
 
 
 def train_model(model, loss_function, optimizer, train_data_set, dev_data_set, F2I, epochs):
