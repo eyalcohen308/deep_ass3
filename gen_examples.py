@@ -26,7 +26,7 @@ def create_examples_file(file_name, regex, num_of_sequences):
 			current_sequence = generate_sequence(regex)
 			if current_sequence not in sequences:
 				if len(sequences) % 500 == 0 and len(sequences) != 0:
-					percentages = (len(sequences) / num_of_sequences)*100
+					percentages = (len(sequences) / num_of_sequences) * 100
 					print("Created {0}% sentences in file {1}".format(percentages, file_name))
 				sequences.add(current_sequence)
 				file.write("{0}\n".format(current_sequence))
@@ -43,7 +43,7 @@ def create_dataset_file(file_name, positive_regex, negative_regex, num_of_sequen
 			current_sequence = generate_sequence(positive_regex if label else negative_regex)
 			if current_sequence not in sequences:
 				if len(sequences) % 500 == 0 and len(sequences) != 0:
-					percentages = (len(sequences) / num_of_sequences)*100
+					percentages = (len(sequences) / num_of_sequences) * 100
 					print("Created {0}% sentences in file {1}".format(percentages, file_name))
 				sequences.add(current_sequence)
 				sequence_with_label = "{0}\t{1}\n".format(current_sequence, label)
@@ -58,10 +58,13 @@ if __name__ == "__main__":
 	import argparse
 
 	parser = argparse.ArgumentParser(description="Deep ex3")
-	parser.add_argument("--examples", help="if one's want to create examples files", type=bool)
-	parser.add_argument("--data_set", help="if one's want to create dataset files (train, dev, test)", type=bool)
-	parser.add_argument("--examples_size", help="set the number of examples in files, '--examples' must be specified", type=int, default=500)
-	parser.add_argument("--dataset_size", help="set the number of dataset size, '--data_set' must be specified", type=int, default=10000)
+	parser.add_argument("--examples", help="if one's want to create examples files", action='store_true')
+	parser.add_argument("--data_set", help="if one's want to create dataset files (train, dev, test)",
+	                    action='store_true')
+	parser.add_argument("--examples_size", help="set the number of examples in files, '--examples' must be specified",
+	                    type=int, default=500)
+	parser.add_argument("--dataset_size", help="set the number of dataset size, '--data_set' must be specified",
+	                    type=int, default=10000)
 	parser.add_argument("--seq_size", help="set the max sequence size", type=int, default=100)
 	args = parser.parse_args()
 
