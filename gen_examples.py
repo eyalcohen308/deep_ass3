@@ -59,19 +59,23 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description="Deep ex3")
 	parser.add_argument("--examples", help="if one's want to create examples files", type=bool)
-	parser.add_argument("--examples_size", help="set the number of examples in files", type=int, default=500)
-	parser.add_argument("--dataset_size", help="set the number of dataset size", type=int, default=10000)
+	parser.add_argument("--data_set", help="if one's want to create dataset files (train, dev, test)", type=bool)
+	parser.add_argument("--examples_size", help="set the number of examples in files, '--examples' must be specified", type=int, default=500)
+	parser.add_argument("--dataset_size", help="set the number of dataset size, '--data_set' must be specified", type=int, default=10000)
 	parser.add_argument("--seq_size", help="set the max sequence size", type=int, default=100)
 	args = parser.parse_args()
-	dataset_size = args.dataset_size
+
 	global SEQUENCE_LEN_LIMIT, SEQUENCE_CHAR_LIMIT
 	SEQUENCE_LEN_LIMIT = args.seq_size
 	SEQUENCE_CHAR_LIMIT = SEQUENCE_LEN_LIMIT // 4
+
 	if args.examples:
 		create_examples_file('pos_examples', POSITIVE_SEQUENCE_REGEX, args.examples_size)
 		create_examples_file('neg_examples', NEGATIVE_SEQUENCE_REGEX, args.examples_size)
-	params = [POSITIVE_SEQUENCE_REGEX, NEGATIVE_SEQUENCE_REGEX, dataset_size]
 
-	create_dataset_file(TRAIN_DIR, *params)
-	create_dataset_file(DEV_DIR, *params)
-	create_dataset_file(TEST_DIR, *params, with_label=False)
+	if args.data_set:
+		dataset_size = args.dataset_size
+		params = [POSITIVE_SEQUENCE_REGEX, NEGATIVE_SEQUENCE_REGEX, dataset_size]
+		create_dataset_file(TRAIN_DIR, *params)
+		create_dataset_file(DEV_DIR, *params)
+		create_dataset_file(TEST_DIR, *params, with_label=False)
