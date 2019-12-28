@@ -55,12 +55,12 @@ def evaluate_accuracy(model, data, F2I, loss_function, epoch):
 			good += 1
 		if index % 500 == 0 and index != 0:
 			percentages = (index / len(data)) * 100
-			print("Dev | Epoch: {0} | {1}% sentences finished".format(epoch, percentages))
+			print("Dev | Epoch: {0} | {1:.2f}% sentences finished".format(epoch + 1, percentages))
 		index += 1
 
-	print('------ Dev | Finished epoch {0} ------'.format(epoch))
+	print('\n\n------ Dev | Finished epoch {0} ------'.format(epoch))
 	print('\tAcc:', good / len(data))
-	print('\tLoss', sum_loss / len(data))
+	print('\tLoss\n', sum_loss / len(data))
 
 
 def train_model(model, loss_function, optimizer, train_data_set, dev_data_set, F2I, epochs):
@@ -88,9 +88,9 @@ def train_model(model, loss_function, optimizer, train_data_set, dev_data_set, F
 			optimizer.step()
 			if index % 500 == 0 and index != 0:
 				percentages = (index / len(train_data_set)) * 100
-				print("Train | Epoch: {0} | {1}% sentences finished".format(epoch, percentages))
+				print("Train | Epoch: {0} | {1:.2f}% sentences finished".format(epoch + 1, percentages))
 			index += 1
-		print('------ Train | Finished epoch {0} ------'.format(epoch))
+		print('\n------ Train | Finished epoch {0} ------\n'.format(epoch))
 		evaluate_accuracy(model, dev_data_set, F2I, loss_function, epoch)
 
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 	mlp_input_dim = 50
 	mlp_hidden_dim = 100
 	output_size = 2
-	epochs = 10
+	epochs = 4
 	lr = 0.001
 
 	'''
