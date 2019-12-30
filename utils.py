@@ -32,15 +32,14 @@ def get_part1_file_directory(data_kind):
 	return "./data/{0}".format(data_kind)
 
 
-def get_part3_file_directory(data_kind, is_pos=True):
+def get_part3_file_directory(data_name="pos", data_kind="train"):
 	"""
 	return the directory of the file from data directory.
 	:param data_kind: name of the data file
-	:param is_pos weather is pos or ner.
+	:param data_name weather is pos or ner.
 	:return: local directory.
 	"""
-	dir_name = "pos" if is_pos else "ner"
-	return "./data/{0}/{1}".format(dir_name, data_kind)
+	return "./data/{0}/{1}".format(data_name, data_kind)
 
 
 def part1_parser(data_dir, is_test=False):
