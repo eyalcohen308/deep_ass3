@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader, TensorDataset
 import re
 
 UNKNOWN_CHAR = '*'
-# TODO: check what is unkown word.
-UNKNOWN_WORD = 'UUUKKKK'
+PAD = "<PAD>"
+UNIQUE_WORD = "UUUKKKK"
 
 
 def tensorize_sentence(sentence, F2I):
@@ -32,15 +32,14 @@ def get_part1_file_directory(data_kind):
 	return "./data/{0}".format(data_kind)
 
 
-def get_part3_file_directory(data_kind, is_pos=True):
+def get_part3_file_directory(data_name="pos", data_kind="train"):
 	"""
 	return the directory of the file from data directory.
 	:param data_kind: name of the data file
-	:param is_pos weather is pos or ner.
+	:param data_name weather is pos or ner.
 	:return: local directory.
 	"""
-	dir_name = "pos" if is_pos else "ner"
-	return "./data/{0}/{1}".format(dir_name, data_kind)
+	return "./data/{0}/{1}".format(data_name, data_kind)
 
 
 def part1_parser(data_dir, is_test=False):
@@ -105,8 +104,26 @@ def pos_ner_parser(data_dir, data_name="pos", data_kind="train", to_lower=False,
 	return sentences_data_set
 
 
-def make_loader(data, batch_size):
+def make_loader(data, F2I, L2I, batch_size):
 	# split the tupled given data to x and y.
-	x, y = zip(*data)
-	x, y = torch.tensor(x), torch.tensor(y)
-	return DataLoader(TensorDataset(x, y), batch_size, shuffle=True)
+	max_sequence_len = max(len(tup[0]) for tup in data)
+	x = torch.LongTensor([convert_to_padded_indexes(sentence, F2I, max_sequence_len) for sentence, _ in data])
+	y = torch.LongTensor([convert_to_padded_indexes(tags, L2I, max_sequence_len) for _, tags in data])
+
+	dataset = TensorDataset(x, y)
+	return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+
+def get_first_value_index(value, tensor_arr):
+	return tensor_arr.tolist().index(value) if value in tensor_arr else len(tensor_arr)
+	# TODO: find the last index that not pad.
+
+
+def convert_to_padded_indexes(sequence, index_dict, max_len):
+	indexed_list = list()
+	for sub_sequence in sequence:
+		indexed_list.append(index_dict[sub_sequence] if sub_sequence in index_dict else index_dict[UNIQUE_WORD])
+	pad_index = index_dict[PAD]
+	indexed_list.extend([pad_index] * (max_len - len(indexed_list)))
+
+	return indexed_list
