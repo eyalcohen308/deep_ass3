@@ -8,15 +8,15 @@ PAD = "<PAD>"
 UNIQUE_WORD = "UUUKKKK"
 
 
-def tensorize_sentence(sentence, F2I):
-	"""
+def tensorize_sequence(sequence, F2I):
+	"""`
 	Convert sentence to indexed tensor representation matrix.
-	:param sentence: a sequence.
+	:param sequence: a sequence.
 	:param F2I: feature to index dictionary
 	:return: indexed tensor representation matrix
 	"""
-	tensor_vector = torch.zeros(len(sentence), len(F2I))
-	for i, feature in enumerate(sentence):
+	tensor_vector = torch.zeros(len(sequence), len(F2I))
+	for i, feature in enumerate(sequence):
 		one_hot_vec = torch.zeros(len(F2I))
 		one_hot_vec[F2I[feature]] = 1
 		tensor_vector[i] = one_hot_vec

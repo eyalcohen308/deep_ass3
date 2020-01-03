@@ -4,7 +4,7 @@ import os
 import numpy as np
 from torch import optim
 
-from utils import tensorize_sentence
+from utils import tensorize_sequence
 from part3_parser import Parser
 import time
 from torch.autograd import Variable
@@ -17,19 +17,22 @@ PAD_INDEX = 0
 
 
 class BILSTMNet(nn.Module):
-	def __init__(self, vocab_size, embedding_length, lstm_out_dim, output_dim):
+	def __init__(self, vocab_size, embedding_length, lstm_out_dim, output_dim, choice="a"):
 		super(BILSTMNet, self).__init__()
 		self.batch_size = batch_size
 		self.word_emb_dim = embedding_length
 		self.hidden_dim = lstm_out_dim
-
-		self.embed = nn.Embedding(vocab_size, embedding_length)
+		if choice == "b":
+			self.letters_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, bidirectional=True,
+			                            num_layers=2,
+			                            batch_first=True)
+		self.embed = nn.Embedding(vocab_size, embedding_length).cuda()
 
 		self.bi_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, bidirectional=True, num_layers=2,
-		                       batch_first=True)
-		self.out = nn.Linear(2 * lstm_out_dim, output_dim)
+		                       batch_first=True).cuda()
+		self.out = nn.Linear(2 * lstm_out_dim, output_dim).cuda()
 
-		self.softmax = nn.LogSoftmax(dim=0)
+		self.softmax = nn.LogSoftmax(dim=0).cuda()
 
 	def forward(self, sentence):
 		# get the len of each vector without padding. if no padding, return len of vector.
@@ -71,13 +74,13 @@ class Dictionaries:
 
 
 def save_data_to_file(data_name, epochs, loss, acu, with_pretrain=False):
-	with open("{0}_model_result.txt".format(data_name), "a") as output:
+	with open("./artifacts/{0}_model_result.txt".format(data_name), "a") as output:
 		output.write(
 			"Parameters - Batch size: {0}, epochs: {1}, lr: {2}, embedding length: {3}, lstm hidden dim: {4}\n".format(
 				batch_size, epochs, lr, embedding_length, lstm_h_dim))
 		output.write(
 			"With pre train: {0}, Epochs: {1}\nAccuracy: {2}\nLoss: {3}\n".format(str(with_pretrain), epochs, str(acu),
-			                                                                     str(loss)))
+			                                                                      str(loss)))
 	output.close()
 
 
@@ -109,9 +112,11 @@ def plot_graphs(dev_acc_list, dev_loss_list, epochs, name):
 def iterate_model(train_data_loader, optimizer, criterion, epoch):
 	percentages_show = 5
 	limit_to_print = round(len(train_data_loader) * (percentages_show / 100))
+	limit_to_print = max(1, limit_to_print)
 	for index, batch in enumerate(train_data_loader):
 		sentences, tags = batch
-
+		sentences = sentences.cuda()
+		tags = tags.cuda()
 		optimizer.zero_grad()
 		output = model(sentences)
 		loss = criterion(output, tags)
@@ -140,6 +145,8 @@ def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epoch
 		dev_acc_list.append(dev_acc)
 		dev_loss_list.append(dev_loss)
 
+	print("\n\nTotal Accuracy: " + str(dev_acc_list))
+	print("\n\nTotal Loss: " + str(dev_loss_list))
 	save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, with_pretrain=False)
 
 
@@ -167,12 +174,14 @@ def calculate_accuracy(y_hats, tags, data_name):
 def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	percentages_show = 5
 	limit_to_print = round(len(dev_dataset_loader) * (percentages_show / 100))
-
+	limit_to_print = max(1, limit_to_print)
 	counter = 0
 	avg_acc = 0
 	avg_loss = 0
 	for index, batch in enumerate(dev_dataset_loader):
 		sentences, tags = batch
+		sentences = sentences.cuda()
+		tags = tags.cuda()
 		counter += 1
 		y_scores = model(sentences)
 		y_hats = torch.argmax(y_scores, dim=1)
@@ -192,25 +201,38 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	acc = (avg_acc / counter) * 100
 	loss = avg_loss / counter
 
-	print('\nData name:{0} Epoch:{1}, Acc:{2}, Loss:{3}'.format(data_name, epoch + 1, acc, loss))
+	print('**********************************************************************************')
+	print('\nData name:{0} Epoch:{1}, Acc:{2}, Loss:{3}\n'.format(data_name, epoch + 1, acc, loss))
+	print('**********************************************************************************')
 	return acc, loss
 
 
 # Hyper parameters:
-batch_size = 100
-epochs = 10
-lr = 0.001
-embedding_length = 50
-lstm_h_dim = 200
+# batch_size = 200
+# epochs = 50
+# lr = 0.001
+# embedding_length = 150
+# lstm_h_dim = 200
+
+batch_size = 1000
+epochs = 20
+lr = 0.005
+embedding_length = 300
+lstm_h_dim = 400
 
 if __name__ == "__main__":
 	# data
+	print("before train parser")
 	dataTrain = Parser("train", "pos")
+	print("after train parser and berfore dev parser")
 	dataDev = Parser("dev", "pos")
+	print("after dev parser")
 	dicts = Dictionaries(dataTrain)
 	F2I, L2I = dicts.F2I, dicts.L2I
+	print("before lodaders parser")
 	train_loader = make_loader(dataTrain.data, F2I, L2I, batch_size)
 	dev_loader = make_loader(dataDev.data, F2I, L2I, batch_size)
+	print("after lodaders parser")
 
 	vocab_size = len(F2I)
 	output_dim = len(L2I)

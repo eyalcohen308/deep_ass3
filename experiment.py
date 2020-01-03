@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import os
 import numpy as np
-from utils import tensorize_sentence
+from utils import tensorize_sequence
 from parser import Parser
 import time
 
@@ -45,7 +45,7 @@ def evaluate_accuracy(model, data, F2I, loss_function, epoch):
 	sum_loss = 0
 	index = 0
 	for sentence, tag in data:
-		tensor_sentence = tensorize_sentence(sentence, F2I)
+		tensor_sentence = tensorize_sequence(sentence, F2I)
 		tensor_tag = torch.tensor(tag)
 		output = model(tensor_sentence)
 		output = output.view(1, -1)
@@ -78,7 +78,7 @@ def train_model(model, loss_function, optimizer, train_data_set, dev_data_set, F
 	for epoch in range(epochs):
 		index = 0
 		for sentence, tag in train_data_set:
-			tensor_sentence = tensorize_sentence(sentence, F2I)
+			tensor_sentence = tensorize_sequence(sentence, F2I)
 			tensor_tag = torch.tensor(tag)
 			optimizer.zero_grad()
 			output = model(tensor_sentence)
