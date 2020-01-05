@@ -17,15 +17,15 @@ PAD_INDEX = 0
 
 
 class BILSTMNet(nn.Module):
-	def __init__(self, vocab_size, embedding_length, lstm_out_dim, output_dim, choice="a"):
+	def __init__(self, vocab_size, embedding_length, lstm_out_dim, output_dim, dicts, choice="a"):
 		super(BILSTMNet, self).__init__()
 		self.batch_size = batch_size
 		self.word_emb_dim = embedding_length
 		self.hidden_dim = lstm_out_dim
+		self.choice = choice
+		self.dicts = dicts
 		if choice == "b":
-			self.letters_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, bidirectional=True,
-			                            num_layers=2,
-			                            batch_first=True)
+			self.letters_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, batch_first=True)
 		self.embed = nn.Embedding(vocab_size, embedding_length).cuda()
 
 		self.bi_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, bidirectional=True, num_layers=2,
@@ -38,8 +38,10 @@ class BILSTMNet(nn.Module):
 		# get the len of each vector without padding. if no padding, return len of vector.
 		seq_lengths = torch.tensor([get_first_value_index(F2I[PAD], element) for element in sentence])
 		total_seq_length = sentence.shape[1]
-		embed_sentence = self.embed(sentence)
-
+		if self.choice == 'a':
+			embed_sentence = self.embed(sentence)
+		elif self.choice == 'b':
+			letter_input, words_lengths = make_letter_input(sentence, self.dicts.I2F, self.max_word_length, self.letter2I)
 		packed_x = pack_padded_sequence(embed_sentence, seq_lengths, batch_first=True, enforce_sorted=False)
 		packed_lstm_output, _ = self.bi_lstm(packed_x)
 		lstm_output, _ = pad_packed_sequence(packed_lstm_output, batch_first=True, padding_value=0,
@@ -219,7 +221,7 @@ epochs = 20
 lr = 0.005
 embedding_length = 300
 lstm_h_dim = 400
-
+choice = 'b'
 if __name__ == "__main__":
 	# data
 	print("before train parser")
@@ -236,6 +238,10 @@ if __name__ == "__main__":
 
 	vocab_size = len(F2I)
 	output_dim = len(L2I)
+	if choice == 'b':
+		words = list(F2I.keys())
+		LETTERS2I = dicts.C2I
+		max_word_len = get_max_word_size(words)
 
 	# if sys.argv < 4:
 	# 	raise ValueError("invalid inputs")
@@ -248,7 +254,7 @@ if __name__ == "__main__":
 	#
 
 	# model
-	model = BILSTMNet(vocab_size, embedding_length, lstm_h_dim, output_dim)
+	model = BILSTMNet(vocab_size, embedding_length, lstm_h_dim, output_dim, dicts)
 	criterion = nn.CrossEntropyLoss(ignore_index=F2I[PAD])
 	optimizer = optim.Adam(model.parameters(), lr)
 	# train

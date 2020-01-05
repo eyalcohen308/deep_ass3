@@ -116,7 +116,9 @@ def make_loader(data, F2I, L2I, batch_size):
 
 def get_first_value_index(value, tensor_arr):
 	return tensor_arr.tolist().index(value) if value in tensor_arr else len(tensor_arr)
-	# TODO: find the last index that not pad.
+
+
+# TODO: find the last index that not pad.
 
 
 def convert_to_padded_indexes(sequence, index_dict, max_len):
@@ -127,3 +129,31 @@ def convert_to_padded_indexes(sequence, index_dict, max_len):
 	indexed_list.extend([pad_index] * (max_len - len(indexed_list)))
 
 	return indexed_list
+
+
+def create_letters_dict_from_list(keys_list):
+	letters = set([letter for word in keys_list for letter in word])
+	letters_dict = {letter: i for i, letter in enumerate(list(sorted(letters)))}
+	return letters_dict
+
+
+def get_max_word_size(keys_list):
+	return len(max(keys_list, key=len))
+
+
+def make_letter_input(input, I2F, max_word_length, letter2I):
+	# input shape is (batch_size, num_sequences)
+	word_input = input.view(-1)
+	# input shape is (batch_size * num_sequences)
+	letter_input = torch.LongTensor(len(word_input), max_word_length)
+	words_length = []
+	for i, idx in enumerate(word_input):
+		word = I2F[int(idx)]
+		if word != PAD:
+			words_length.append(len(word))
+			letter_input[i] = torch.LongTensor(convert_to_padded_indexes(word, letter2I, max_word_length))
+		else:
+			# doesn't matter because in the word embedding rapper it will skip them.
+			words_length.append(1)
+
+	return letter_input, words_length
