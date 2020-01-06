@@ -257,7 +257,8 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	loss = avg_loss / counter
 
 	print('**********************************************************************************')
-	print('\nData name:{0} Epoch:{1}, Acc:{2}, Loss:{3}\n'.format(data_name, epoch + 1, acc, loss))
+	print('\nEmbed choice: {0} Data name:{1} Epoch:{2}, Acc:{3}, Loss:{4}\n'.format(model.choice, data_name, epoch + 1,
+	                                                                                acc, loss))
 	print('**********************************************************************************')
 	return acc, loss
 
