@@ -4,7 +4,8 @@ from torch.utils.data import DataLoader, TensorDataset
 import re
 
 UNKNOWN_CHAR = '*'
-PAD = "<PAD>"
+PAD = "*PAD*"
+CHAR_PAD = "*CHAR_PAD*"
 UNIQUE_WORD = "UUUKKKK"
 
 
@@ -114,8 +115,9 @@ def make_loader(data, F2I, L2I, batch_size):
 	return DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 
-def get_first_value_index(value, tensor_arr):
-	return tensor_arr.tolist().index(value) if value in tensor_arr else len(tensor_arr)
+def get_size_without_pad(value, tensor_arr):
+	# get the size witout pad. if it zero convert it to 1 ( The packing doe's not execpt zero as word size)
+	return (tensor_arr.tolist().index(value) or 1) if value in tensor_arr else len(tensor_arr)
 
 
 # TODO: find the last index that not pad.
@@ -131,29 +133,25 @@ def convert_to_padded_indexes(sequence, index_dict, max_len):
 	return indexed_list
 
 
-def create_letters_dict_from_list(keys_list):
-	letters = set([letter for word in keys_list for letter in word])
-	letters_dict = {letter: i for i, letter in enumerate(list(sorted(letters)))}
-	return letters_dict
-
-
 def get_max_word_size(keys_list):
 	return len(max(keys_list, key=len))
 
 
-def make_letter_input(input, I2F, max_word_length, letter2I):
+def create_char_input(input, dicts):
+	F2I, I2F, C2I = dicts.F2I, dicts.I2F, dicts.C2I
+	max_word_len = get_max_word_size(list(F2I.keys()))
+
 	# input shape is (batch_size, num_sequences)
 	word_input = input.view(-1)
 	# input shape is (batch_size * num_sequences)
-	letter_input = torch.LongTensor(len(word_input), max_word_length)
-	words_length = []
+	char_input = torch.zeros(len(word_input), max_word_len, dtype=torch.long)
+	# words_length = []
 	for i, idx in enumerate(word_input):
 		word = I2F[int(idx)]
 		if word != PAD:
-			words_length.append(len(word))
-			letter_input[i] = torch.LongTensor(convert_to_padded_indexes(word, letter2I, max_word_length))
-		else:
-			# doesn't matter because in the word embedding rapper it will skip them.
-			words_length.append(1)
-
-	return letter_input, words_length
+			# words_length.append(len(word))
+			char_input[i] = torch.LongTensor(convert_to_padded_indexes(word, C2I, max_word_len))
+	# else:
+	# 	# doesn't matter because in the word embedding rapper it will skip them.
+	# 	words_length.append(1)
+	return char_input

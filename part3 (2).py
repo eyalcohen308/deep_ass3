@@ -117,7 +117,7 @@ def make_letter_input(input, I2F, max_word_length, letter2I):
     # input shape is (batch_size, num_sequences)
     word_input = input.view(-1)
     # input shape is (batch_size * num_sequences)
-    letter_input = torch.LongTensor(len(word_input), max_word_length)
+    letter_input = torch.zeros(len(word_input), max_word_length, dtype=torch.long)
     words_length = []
     for i, idx in enumerate(word_input):
         word = I2F[int(idx)]
@@ -125,6 +125,7 @@ def make_letter_input(input, I2F, max_word_length, letter2I):
             words_length.append(len(word))
             letter_input[i] = torch.LongTensor(prepare_list(word, max_word_length, letter2I, L_PAD))
         else:
+            # letter_input[i] = torch.LongTensor(prepare_list(word, max_word_length, letter2I, L_PAD))
             words_length.append(1)
 
     return letter_input, words_length

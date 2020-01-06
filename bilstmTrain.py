@@ -13,36 +13,51 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from utils import *
 import matplotlib.pyplot as plt
 
-PAD_INDEX = 0
-
 
 class BILSTMNet(nn.Module):
-	def __init__(self, vocab_size, embedding_length, lstm_out_dim, output_dim, dicts, choice="a"):
+	def __init__(self, vocab_size, embedding_len, lstm_out_dim, output_dim, dicts, char_embedding_len,
+	             choice="a"):
 		super(BILSTMNet, self).__init__()
+		self.char_embedding_len = char_embedding_len
 		self.batch_size = batch_size
-		self.word_emb_dim = embedding_length
+		self.word_emb_dim = embedding_len
 		self.hidden_dim = lstm_out_dim
 		self.choice = choice
 		self.dicts = dicts
-		if choice == "b":
-			self.letters_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, batch_first=True)
-		self.embed = nn.Embedding(vocab_size, embedding_length).cuda()
 
-		self.bi_lstm = nn.LSTM(input_size=embedding_length, hidden_size=lstm_out_dim, bidirectional=True, num_layers=2,
-		                       batch_first=True).cuda()
-		self.out = nn.Linear(2 * lstm_out_dim, output_dim).cuda()
+		if choice == 'a':
+			self.embed = nn.Embedding(vocab_size, embedding_len)
+		elif choice == "b":
+			self.char_embed = nn.Embedding(len(dicts.C2I), self.char_embedding_len)
+			self.chars_lstm = nn.LSTM(input_size=self.char_embedding_len, hidden_size=embedding_len, batch_first=True)
 
-		self.softmax = nn.LogSoftmax(dim=0).cuda()
+		self.bi_lstm = nn.LSTM(input_size=embedding_len, hidden_size=lstm_out_dim, bidirectional=True, num_layers=2,
+		                       batch_first=True)
+		self.out = nn.Linear(2 * lstm_out_dim, output_dim)
+
+		self.softmax = nn.LogSoftmax(dim=0)
 
 	def forward(self, sentence):
 		# get the len of each vector without padding. if no padding, return len of vector.
-		seq_lengths = torch.tensor([get_first_value_index(F2I[PAD], element) for element in sentence])
+		seq_lengths = torch.tensor([get_size_without_pad(F2I[PAD], element) for element in sentence])
 		total_seq_length = sentence.shape[1]
+
 		if self.choice == 'a':
-			embed_sentence = self.embed(sentence)
+			embed_input = self.embed(sentence)
+
 		elif self.choice == 'b':
-			letter_input, words_lengths = make_letter_input(sentence, self.dicts.I2F, self.max_word_length, self.letter2I)
-		packed_x = pack_padded_sequence(embed_sentence, seq_lengths, batch_first=True, enforce_sorted=False)
+			char_input = create_char_input(sentence, self.dicts)
+			# TODO: Need to find all words size with the same function as in sequence row 42.
+			words_len = torch.tensor([get_size_without_pad(self.dicts.C2I[PAD], word) for word in char_input])
+			embed_chars = self.char_embed(char_input)
+			# It's chars packing time:
+			packed_chars_input = pack_padded_sequence(embed_chars, words_len, batch_first=True,
+			                                          enforce_sorted=False)
+			_, (lstm_last_h_output, _) = self.chars_lstm(packed_chars_input)
+			# final hidden_state size is (1, num_words, hid_dim1)
+			embed_input = lstm_last_h_output.view(batch_size, total_seq_length, self.word_emb_dim)
+
+		packed_x = pack_padded_sequence(embed_input, seq_lengths, batch_first=True, enforce_sorted=False)
 		packed_lstm_output, _ = self.bi_lstm(packed_x)
 		lstm_output, _ = pad_packed_sequence(packed_lstm_output, batch_first=True, padding_value=0,
 		                                     total_length=total_seq_length)
@@ -56,8 +71,9 @@ class Dictionaries:
 	def __init__(self, data_set):
 		# Word <-> Index:
 
-		extend_vocab = list(data_set.vocab) + [PAD, UNIQUE_WORD]
-		extend_tags = list(data_set.tags) + [PAD, UNIQUE_WORD]
+		extend_vocab = [PAD, UNIQUE_WORD] + list(data_set.vocab)
+		extend_tags = [PAD, UNIQUE_WORD] + list(data_set.tags)
+		extend_chars = [PAD, UNIQUE_WORD] + list(data_set.chars)
 		self.F2I = {word: i for i, word in enumerate(extend_vocab)}
 		self.I2F = {i: word for i, word in enumerate(extend_vocab)}
 		# Label <-> Index:
@@ -65,8 +81,8 @@ class Dictionaries:
 		self.I2L = {i: tag for i, tag in enumerate(extend_tags)}
 
 		# char <-> index:
-		self.C2I = {char: i for i, char in enumerate(data_set.chars)}
-		self.I2C = {i: char for i, char in enumerate(data_set.chars)}
+		self.C2I = {char: i for i, char in enumerate(extend_chars)}
+		self.I2C = {i: char for i, char in enumerate(extend_chars)}
 
 		# pref/suff <-> index:
 		self.P2I = {pref: i for i, pref in enumerate(data_set.pref)}
@@ -79,7 +95,7 @@ def save_data_to_file(data_name, epochs, loss, acu, with_pretrain=False):
 	with open("./artifacts/{0}_model_result.txt".format(data_name), "a") as output:
 		output.write(
 			"Parameters - Batch size: {0}, epochs: {1}, lr: {2}, embedding length: {3}, lstm hidden dim: {4}\n".format(
-				batch_size, epochs, lr, embedding_length, lstm_h_dim))
+				batch_size, epochs, lr, embedding_len, lstm_h_dim))
 		output.write(
 			"With pre train: {0}, Epochs: {1}\nAccuracy: {2}\nLoss: {3}\n".format(str(with_pretrain), epochs, str(acu),
 			                                                                      str(loss)))
@@ -117,8 +133,8 @@ def iterate_model(train_data_loader, optimizer, criterion, epoch):
 	limit_to_print = max(1, limit_to_print)
 	for index, batch in enumerate(train_data_loader):
 		sentences, tags = batch
-		sentences = sentences.cuda()
-		tags = tags.cuda()
+		sentences = sentences
+		tags = tags
 		optimizer.zero_grad()
 		output = model(sentences)
 		loss = criterion(output, tags)
@@ -182,8 +198,8 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	avg_loss = 0
 	for index, batch in enumerate(dev_dataset_loader):
 		sentences, tags = batch
-		sentences = sentences.cuda()
-		tags = tags.cuda()
+		sentences = sentences
+		tags = tags
 		counter += 1
 		y_scores = model(sentences)
 		y_hats = torch.argmax(y_scores, dim=1)
@@ -219,7 +235,8 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 batch_size = 1000
 epochs = 20
 lr = 0.005
-embedding_length = 300
+embedding_len = 300
+char_embedding_len = 30
 lstm_h_dim = 400
 choice = 'b'
 if __name__ == "__main__":
@@ -240,7 +257,6 @@ if __name__ == "__main__":
 	output_dim = len(L2I)
 	if choice == 'b':
 		words = list(F2I.keys())
-		LETTERS2I = dicts.C2I
 		max_word_len = get_max_word_size(words)
 
 	# if sys.argv < 4:
@@ -254,7 +270,7 @@ if __name__ == "__main__":
 	#
 
 	# model
-	model = BILSTMNet(vocab_size, embedding_length, lstm_h_dim, output_dim, dicts)
+	model = BILSTMNet(vocab_size, embedding_len, lstm_h_dim, output_dim, dicts, char_embedding_len, choice)
 	criterion = nn.CrossEntropyLoss(ignore_index=F2I[PAD])
 	optimizer = optim.Adam(model.parameters(), lr)
 	# train
