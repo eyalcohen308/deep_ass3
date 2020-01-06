@@ -155,3 +155,29 @@ def create_char_input(input, dicts):
 	# 	# doesn't matter because in the word embedding rapper it will skip them.
 	# 	words_length.append(1)
 	return char_input
+
+
+def make_prefix(index, dicts):
+	I2F, P2I = dicts.I2F, dicts.P2I
+	word = I2F[int(index)]
+	prefix = word[:3]
+	return P2I[prefix] if prefix in P2I else P2I[UNIQUE_WORD[:3]]
+
+
+def make_suffix(index, dicts):
+	I2F, S2I = dicts.I2F, dicts.S2I
+	word = I2F[int(index)]
+	prefix = word[-3:]
+	return S2I[prefix] if prefix in S2I else S2I[UNIQUE_WORD[-3:]]
+
+
+def make_prefix_suffix_input(input, dicts):
+	# [[item + 1 for item in list] for list in list_of_lists]
+	# input shape is (batch_size, num_sequences)
+	# prefix_input = torch.LongTensor(input.shape)
+	# suffix_input = torch.LongTensor(len(input), len(input[0]))
+	prefixes = [[make_prefix(word, dicts) for word in sentence] for sentence in input]
+	suffixes = [[make_suffix(word, dicts) for word in sentence] for sentence in input]
+	prefix_input = torch.LongTensor(prefixes)
+	suffix_input = torch.LongTensor(suffixes)
+	return prefix_input, suffix_input
