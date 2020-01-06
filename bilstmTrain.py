@@ -128,11 +128,11 @@ class Dictionaries:
 		self.I2S = {i: suff for i, suff in enumerate(extend_suffix)}
 
 
-def save_data_to_file(data_name, epochs, loss, acu, with_pretrain=False):
+def save_data_to_file(data_name, epochs, loss, acu, choice, with_pretrain=False):
 	with open("./artifacts/{0}_model_result.txt".format(data_name), "a") as output:
 		output.write(
-			"Parameters - Batch size: {0}, epochs: {1}, lr: {2}, embedding length: {3}, lstm hidden dim: {4}\n".format(
-				batch_size, epochs, lr, embedding_len, lstm_h_dim))
+			"Parameters - Choice {0} Batch size: {1}, epochs: {2}, lr: {3}, embedding length: {4}, lstm hidden dim: {5}\n".format(
+				choice, batch_size, epochs, lr, embedding_len, lstm_h_dim))
 		output.write(
 			"With pre train: {0}, Epochs: {1}\nAccuracy: {2}\nLoss: {3}\n".format(str(with_pretrain), epochs, str(acu),
 			                                                                      str(loss)))
@@ -202,7 +202,7 @@ def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epoch
 
 	print("\n\nTotal Accuracy: " + str(dev_acc_list))
 	print("\n\nTotal Loss: " + str(dev_loss_list))
-	save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, with_pretrain=False)
+	save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, model.choice, with_pretrain=False)
 
 
 # plot_graphs(dev_acc_list, dev_loss_list, epochs, data_name)
