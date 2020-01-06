@@ -48,8 +48,8 @@ def iterate_model(model, train_data_loader, optimizer, criterion, epoch):
 	limit_to_print = max(1, limit_to_print)
 	for index, batch in enumerate(train_data_loader):
 		sentences, tags = batch
-		sentences = sentences
-		tags = tags
+		sentences = sentences.cuda()
+		tags = tags.cuda()
 		optimizer.zero_grad()
 		output = model(sentences)
 		loss = criterion(output, tags)
@@ -117,8 +117,8 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	avg_loss = 0
 	for index, batch in enumerate(dev_dataset_loader):
 		sentences, tags = batch
-		sentences = sentences
-		tags = tags
+		sentences = sentences.cuda()
+		tags = tags.cuda()
 		counter += 1
 		y_scores = model(sentences)
 		y_hats = torch.argmax(y_scores, dim=1)
