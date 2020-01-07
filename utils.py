@@ -1,12 +1,20 @@
+import os
+
 import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 import re
+import pickle
 
 UNKNOWN_CHAR = '*'
 PAD = "*PAD*"
 CHAR_PAD = "*CHAR_PAD*"
 UNIQUE_WORD = "UUUKKKK"
+ARTIFACTS_PATH = "./artifacts"
+MODEL_FILE_NAME = "saved_model.pt"
+DATASET_NAME = "dataset.pickle"
+DATASET_DIR = os.path.join(ARTIFACTS_PATH, DATASET_NAME)
+MODEL_DIR = os.path.join(ARTIFACTS_PATH, MODEL_FILE_NAME)
 
 
 def tensorize_sequence(sequence, F2I):
@@ -181,3 +189,18 @@ def make_prefix_suffix_input(input, dicts):
 	prefix_input = torch.LongTensor(prefixes)
 	suffix_input = torch.LongTensor(suffixes)
 	return prefix_input, suffix_input
+
+
+def save_model_and_dicts(model, data_set):
+	model.save(MODEL_DIR)
+	with open(DATASET_DIR, 'wb') as file:
+		pickle.dump(data_set, file, pickle.HIGHEST_PROTOCOL)
+	print('data set and model were saved successfully!')
+
+
+def load_model_and_dicts(model):
+	model.load(MODEL_DIR)
+	with open(DATASET_DIR, 'rb') as file:
+		data_set = pickle.load(file)
+	print('data set and model were loaded successfully!')
+	return data_set

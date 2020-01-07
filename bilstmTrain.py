@@ -100,6 +100,13 @@ class BILSTMNet(nn.Module):
 		output = output.permute(0, 2, 1)
 		return output
 
+	def save(self, path):
+		torch.save(self.state_dict(), path)
+
+	def load(self, path):
+		state_dict = torch.load(path)
+		self.load_state_dict(state_dict)
+
 
 class Dictionaries:
 	def __init__(self, data_set):
@@ -129,9 +136,10 @@ class Dictionaries:
 
 
 def save_data_to_file(data_name, epochs, loss, acu, choice, with_pretrain=False):
-	with open("./artifacts/{0}_model_result.txt".format(data_name), "a") as output:
+	file_dir = os.path.join(ARTIFACTS_PATH, "{0}_model_result.txt".format(data_name))
+	with open(file_dir, "a") as output:
 		output.write(
-			"Parameters - Choice {0} Batch size: {1}, epochs: {2}, lr: {3}, embedding length: {4}, lstm hidden dim: {5}\n".format(
+			"Parameters - Choice \'{0}\' Batch size: {1}, epochs: {2}, lr: {3}, embedding length: {4}, lstm hidden dim: {5}\n".format(
 				choice, batch_size, epochs, lr, embedding_len, lstm_h_dim))
 		output.write(
 			"With pre train: {0}, Epochs: {1}\nAccuracy: {2}\nLoss: {3}\n".format(str(with_pretrain), epochs, str(acu),
@@ -257,8 +265,9 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	loss = avg_loss / counter
 
 	print('**********************************************************************************')
-	print('\nEmbed choice: {0} Data name:{1} Epoch:{2}, Acc:{3}, Loss:{4}\n'.format(model.choice, data_name, epoch + 1,
-	                                                                                acc, loss))
+	print('\nEmbed choice: \'{0}\' Data name:{1} Epoch:{2}, Acc:{3}, Loss:{4}\n'.format(model.choice, data_name,
+	                                                                                    epoch + 1,
+	                                                                                    acc, loss))
 	print('**********************************************************************************')
 	return acc, loss
 
@@ -277,6 +286,7 @@ embedding_len = 300
 char_embedding_len = 30
 lstm_h_dim = 400
 choice = 'c'
+save_model = True
 if __name__ == "__main__":
 	# data
 	print("before train parser")
@@ -293,9 +303,6 @@ if __name__ == "__main__":
 
 	vocab_size = len(F2I)
 	output_dim = len(L2I)
-	if choice == 'b':
-		words = list(F2I.keys())
-		max_word_len = get_max_word_size(words)
 
 	# if sys.argv < 4:
 	# 	raise ValueError("invalid inputs")
@@ -313,6 +320,7 @@ if __name__ == "__main__":
 	optimizer = optim.Adam(model.parameters(), lr)
 	# train
 	train(model, train_loader, dev_loader, criterion, optimizer, epochs, dataTrain.data_name)
+	save_model_and_dicts(model, dataTrain)
 
 # model.save("model_" + modelFile + "_" + repr)
 #
