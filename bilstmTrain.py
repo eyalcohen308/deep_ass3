@@ -80,15 +80,17 @@ def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epoch
 		iterate_model(model, train_data_loader, optimizer, criterion, epoch)
 
 		# calculate performance on dev_data_set
-		dev_acc, dev_loss = evaluate_accuracy(model, dev_data_loader, criterion, data_name, epoch)
+		if dev_data_loader:
+			dev_acc, dev_loss = evaluate_accuracy(model, dev_data_loader, criterion, data_name, epoch)
 
-		dev_acc_list.append(dev_acc)
-		dev_loss_list.append(dev_loss)
+			dev_acc_list.append(dev_acc)
+			dev_loss_list.append(dev_loss)
 
-	print("\n\nTotal Accuracy: " + str(dev_acc_list))
-	print("\nTotal Loss: " + str(dev_loss_list))
-	save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, model.choice, with_pretrain=False)
-	save_500_acc_dev_to_file(data_name, model.choice)
+	if dev_data_loader:
+		print("\n\nTotal Accuracy: " + str(dev_acc_list))
+		print("\nTotal Loss: " + str(dev_loss_list))
+		save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, model.choice, with_pretrain=False)
+		save_500_acc_dev_to_file(data_name, model.choice)
 
 
 def calculate_accuracy(y_hats, tags, data_name):
@@ -158,13 +160,14 @@ dev_500_acc = []
 batch_size = 500
 epochs = 1
 lr = 0.005
-embedding_len = 100
-char_embedding_len = 30
+embedding_len = 300
+char_embedding_len = 150
 lstm_h_dim = 200
 choice = 'a'
 save_model = True
-load_model = True
-to_replace_rare_words = True
+load_model = False
+to_replace_rare_words = False
+check_on_dev = False
 
 
 def replace_rare_words(data):
@@ -173,35 +176,27 @@ def replace_rare_words(data):
 
 
 if __name__ == "__main__":
+	# bilstmTrain.py <a/b/c/d> <train_file_path> <saved_model_path> <pos/ner>
+	if len(sys.argv) != 6:
+		raise ValueError("must get 4 parameters, Please run command: "
+		                 "'bilstmTrain.py <a/b/c/d> <train_file_path> <saved_model_path> <train_dataset_save_dir> <pos/ner>'")
+	_, choice, train_file_path, model_file_path, train_dataset_save_dir, data_name = sys.argv
 	# data
-	print("before train parser")
 
-	dataTrain = load_dataset(TRAIN_DATASET_DIR) if load_model else Parser("train", "pos")
-	print("after train parser and berfore dev parser")
-	dataDev = Parser("dev", "pos")
-	print("after dev parser")
+	dataTrain = load_dataset(TRAIN_DATASET_DIR) if load_model else Parser("train", data_name,
+	                                                                      dataset_path=train_file_path)
+
+	dataDev = Parser("dev", data_name) if check_on_dev else ""
 	dicts = Dictionaries(dataTrain)
 	F2I, L2I = dicts.F2I, dicts.L2I
-	print("before loaders parser")
 	#
 	# if to_replace_rare_words:
 	# 	replace_rare_words(dataTrain.data)
 	train_loader = make_loader(dataTrain.data, F2I, L2I, batch_size)
-	dev_loader = make_loader(dataDev.data, F2I, L2I, batch_size)
-	print("after loaders parser")
+	dev_loader = make_loader(dataDev.data, F2I, L2I, batch_size) if check_on_dev else ""
 
 	vocab_size = len(F2I)
 	output_dim = len(L2I)
-
-	# if sys.argv < 4:
-	# 	raise ValueError("invalid inputs")
-	#
-	# repr, trainFile, modelFile, devFile = sys.argv
-	# is_emb = True if repr in {"a", "c", "d"} else False
-	# is_sub = True if repr in {"c"} else False
-	# is_LSTM = True if repr in {"b", "d"} else False
-	# is_pos = True if "pos" in modelFile else False
-	#
 
 	# model
 	model = BILSTMNet(vocab_size, embedding_len, lstm_h_dim, output_dim, dicts, char_embedding_len, batch_size, choice)
@@ -211,10 +206,4 @@ if __name__ == "__main__":
 	optimizer = optim.Adam(model.parameters(), lr)
 	# train
 	train(model, train_loader, dev_loader, criterion, optimizer, epochs, dataTrain.data_name)
-	save_model_and_data_sets(model, dataTrain, dataDev)
-
-# model.save("model_" + modelFile + "_" + repr)
-#
-# qf = open("acc_" + modelFile + "_" + repr, "w")
-# qf.write(" ".join(map(str, accs)))
-# qf.close()
+	save_model_and_data_sets(model, dataTrain, model_file_path, train_dataset_save_dir)

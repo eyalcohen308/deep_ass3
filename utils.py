@@ -326,12 +326,10 @@ def make_prefix_suffix_input(input, dicts):
 	return prefix_input, suffix_input
 
 
-def save_model_and_data_sets(model, train_dataset, dev_dataset):
-	model.save(MODEL_DIR)
-	with open(TRAIN_DATASET_DIR, 'wb') as file:
+def save_model_and_data_sets(model, train_dataset, model_file_path, train_dataset_save_dir):
+	model.save(model_file_path)
+	with open(train_dataset_save_dir, 'wb') as file:
 		pickle.dump(train_dataset, file, pickle.HIGHEST_PROTOCOL)
-	with open(DEV_DATASET_DIR, 'wb') as file:
-		pickle.dump(dev_dataset, file, pickle.HIGHEST_PROTOCOL)
 	print('\nData sets and model were saved successfully!')
 
 
