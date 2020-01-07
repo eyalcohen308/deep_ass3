@@ -5,6 +5,7 @@ import numpy as np
 from utils import tensorize_sequence
 from parser import Parser
 import time
+import sys
 
 
 class LSTMNet(nn.Module):
@@ -95,6 +96,11 @@ def train_model(model, loss_function, optimizer, train_data_set, dev_data_set, F
 
 
 if __name__ == "__main__":
+	# > experiment.py.py <train_dataset_path> <test_dataset_path>
+	if len(sys.argv) != 3:
+		raise ValueError(
+			"must get 4 parameters, Please run command: 'experiment.py.py <train_dataset_path> <test_dataset_path>'")
+	_, train_dataset_path, test_dataset_path = sys.argv
 	'''
 	Model Parameters
 	'''
@@ -107,11 +113,11 @@ if __name__ == "__main__":
 	'''
 	Parsing the data, using vocabulary from train for define dev words.
 	'''
-	train_parser = Parser(data_kind="train")
+	train_parser = Parser(data_kind="train", file_dir=train_dataset_path)
 	F2I = train_parser.get_f2i()
 	L2I = train_parser.get_l2i()
 	vocab_size = len(F2I)
-	dev_parser = Parser("dev", F2I, L2I)
+	dev_parser = Parser("dev", F2I, L2I, file_dir=test_dataset_path)
 	train_data_set = train_parser.get_data_set()
 	dev_data_set = dev_parser.get_data_set()
 

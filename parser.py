@@ -4,8 +4,8 @@ import random
 
 
 class Parser:
-	def __init__(self, data_kind="train", F2I={}, L2I={}):
-		file_dir = get_part1_file_directory(data_kind)
+	def __init__(self, data_kind="train", F2I={}, L2I={}, file_dir=""):
+		self.file_dir = file_dir if file_dir else get_part1_file_directory(data_kind)
 		self.data_kind = data_kind
 		self.dataset = part1_parser(file_dir)
 		self.F2I = F2I if F2I else self.generate_f2i()
