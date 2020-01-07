@@ -3,6 +3,7 @@ from torch import optim
 from part3_parser import Parser
 from utils import *
 import matplotlib.pyplot as plt
+import collections
 
 
 def save_data_to_file(data_name, epochs, loss, acu, choice, with_pretrain=False):
@@ -163,6 +164,14 @@ lstm_h_dim = 200
 choice = 'a'
 save_model = True
 load_model = True
+to_replace_rare_words = True
+
+
+def replace_rare_words(data):
+	counter = collections.Counter([tup[0] for sequence in data for tup in sequence])
+	tup = counter.most_common()[-10:]
+
+
 if __name__ == "__main__":
 	# data
 	print("before train parser")
@@ -174,6 +183,9 @@ if __name__ == "__main__":
 	dicts = Dictionaries(dataTrain)
 	F2I, L2I = dicts.F2I, dicts.L2I
 	print("before loaders parser")
+	#
+	# if to_replace_rare_words:
+	# 	replace_rare_words(dataTrain.data)
 	train_loader = make_loader(dataTrain.data, F2I, L2I, batch_size)
 	dev_loader = make_loader(dataDev.data, F2I, L2I, batch_size)
 	print("after loaders parser")
