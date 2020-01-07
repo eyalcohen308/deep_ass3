@@ -76,7 +76,8 @@ def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epoch
 	dev_loss_list = []
 	for epoch in range(epochs):
 		# train loop
-		iterate_model(model, train_data_loader, optimizer, criterion, epoch)
+		if to_train_model:
+			iterate_model(model, train_data_loader, optimizer, criterion, epoch)
 
 		# calculate performance on dev_data_set
 		dev_acc, dev_loss = evaluate_accuracy(model, dev_data_loader, criterion, data_name, epoch)
@@ -147,6 +148,14 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 	return acc, loss
 
 
+parameters = [['c', 1000, 5, 0.005, 200, 400, 400], ['b', 1000, 5, 0.005, 300, 400, 300],
+              ['c', 1000, 5, 0.005, 300, 400, 300],
+              ['d', 1000, 5, 0.005, 600, 800, 300], ['a', 500, 5, 0.005, 600, 400, 300],
+              ['b', 500, 5, 0.005, 300, 600, 300],
+              ['d', 500, 5, 0.005, 300, 400, 300], ['a', 500, 5, 0.005, 300, 400, 300],
+              ['b', 500, 5, 0.005, 300, 400, 300],
+              ]
+
 # Hyper parameters:
 # batch_size = 200
 # epochs = 50
@@ -155,14 +164,15 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 # lstm_h_dim = 200
 dev_500_acc = []
 batch_size = 500
-epochs = 1
+epochs = 5
 lr = 0.005
-embedding_len = 100
+embedding_len = 300
 char_embedding_len = 30
-lstm_h_dim = 200
+lstm_h_dim = 400
 choice = 'a'
 save_model = True
-load_model = True
+load_model = False
+to_train_model = True
 if __name__ == "__main__":
 	# data
 	print("before train parser")

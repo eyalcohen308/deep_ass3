@@ -23,13 +23,11 @@ def predict_tags(model, test_data_loader, test_file_dir, data_name):
 	limit_to_print = round(len(test_data_loader) * (percentages_show / 100))
 	limit_to_print = max(1, limit_to_print)
 	counter = 0
-	avg_acc = 0
-	avg_loss = 0
 	for index, batch in enumerate(test_data_loader):
 		sentences = batch[0]
 		sentences = sentences
 		counter += 1
-		y_scores = model(sentences)
+		y_scores = model(sentences.cuda())
 		y_hats = torch.argmax(y_scores, dim=1)
 
 		submit_prediction_to_file(sentences, y_hats, model.dicts, test_file_dir, data_name)
