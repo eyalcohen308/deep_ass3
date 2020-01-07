@@ -6,7 +6,7 @@ import pickle
 
 
 class Parser:
-	def __init__(self, data_kind="train", data_name="pos", to_lower=False, train_path=""):
+	def __init__(self, data_kind="train", data_name="pos", to_lower=False, dataset_path=""):
 		self.data = []
 		self.tags = set()
 		self.vocab = set()
@@ -16,7 +16,7 @@ class Parser:
 		self.data_name = data_name
 		self.data_kind = data_kind
 		self.to_lower = to_lower
-		self.train_path = train_path
+		self.dataset_path = dataset_path
 
 		self.parse_data()
 
@@ -24,14 +24,14 @@ class Parser:
 		sentence = []
 		tags = []
 		delimiter = ' ' if self.data_name == "pos" else '\t'
-		data_dir = self.train_path if self.train_path else get_part3_file_directory(self.data_name, self.data_kind)
+		data_dir = self.dataset_path if self.dataset_path else get_part3_file_directory(self.data_name, self.data_kind)
 		lines_list = open(data_dir).read().splitlines()
 		for line in lines_list:
 
 			# Iterate on each word until the end of sentence:
 			if line != "":
 				parsed_line = line.split(delimiter)
-				if self.data_name != "test":
+				if self.data_kind != "test":
 					word, tag = parsed_line
 					if tag not in self.tags:
 						self.tags.add(tag)
@@ -52,7 +52,7 @@ class Parser:
 					self.suff.add(word[-3:])
 			else:
 				# End of sentence:
-				self.data.append((sentence, tags))
+				self.data.append((sentence, tags) if self.data_kind != "test" else sentence)
 				sentence = []
 				tags = []
 

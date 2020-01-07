@@ -3,3 +3,4 @@
 venv/
 __pycache__/
 tmp_file.py
+pos_model_result.txt
