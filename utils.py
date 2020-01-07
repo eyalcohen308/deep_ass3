@@ -258,7 +258,7 @@ def make_test_loader(data, F2I, batch_size):
 	x = torch.LongTensor([convert_to_padded_indexes(sentence, F2I, max_sequence_len) for sentence in data])
 
 	dataset = TensorDataset(x)
-	return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+	return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 
 def get_size_without_pad(value, tensor_arr):
