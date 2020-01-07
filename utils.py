@@ -7,15 +7,19 @@ import pickle
 import torch.nn as nn
 import sys
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+import pathlib
 
 UNKNOWN_CHAR = '*'
 PAD = "*PAD*"
 CHAR_PAD = "*CHAR_PAD*"
 UNIQUE_WORD = "UUUKKKK"
-ARTIFACTS_PATH = "./artifacts"
+ARTIFACTS_PATH = "./artifactss"
 MODEL_FILE_NAME = "saved_model.pt"
 TRAIN_DATASET_NAME = "train_dataset.pickle"
 DEV_DATASET_NAME = "dev_dataset.pickle"
+pathlib.Path(ARTIFACTS_PATH).mkdir(parents=True, exist_ok=True)
+
+DEV_500_ACC_PATH = os.path.join(ARTIFACTS_PATH, TRAIN_DATASET_NAME)
 TRAIN_DATASET_DIR = os.path.join(ARTIFACTS_PATH, TRAIN_DATASET_NAME)
 DEV_DATASET_DIR = os.path.join(ARTIFACTS_PATH, DEV_DATASET_NAME)
 MODEL_DIR = os.path.join(ARTIFACTS_PATH, MODEL_FILE_NAME)

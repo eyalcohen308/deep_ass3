@@ -64,10 +64,16 @@ def iterate_model(model, train_data_loader, optimizer, criterion, epoch):
 	print('\n------ Train | Finished epoch {0} ------\n'.format(epoch + 1))
 
 
+def save_500_acc_dev_to_file(data_name, choice):
+	file_dir = os.path.join(ARTIFACTS_PATH, "{0}_dev_500_acc_result.txt".format(data_name))
+	with open(file_dir, "a") as output:
+		output.write("Data name: {0}, Choice: '{1}'\nDev list: {2}\n\n".format(data_name, choice, str(dev_500_acc)))
+	output.close()
+
+
 def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epochs, data_name):
 	dev_acc_list = []
 	dev_loss_list = []
-
 	for epoch in range(epochs):
 		# train loop
 		iterate_model(model, train_data_loader, optimizer, criterion, epoch)
@@ -81,6 +87,7 @@ def train(model, train_data_loader, dev_data_loader, criterion, optimizer, epoch
 	print("\n\nTotal Accuracy: " + str(dev_acc_list))
 	print("\nTotal Loss: " + str(dev_loss_list))
 	save_data_to_file(data_name, epochs, dev_loss_list, dev_acc_list, model.choice, with_pretrain=False)
+	save_500_acc_dev_to_file(data_name, model.choice)
 
 
 def calculate_accuracy(y_hats, tags, data_name):
@@ -116,8 +123,9 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 		y_scores = model(sentences)
 		y_hats = torch.argmax(y_scores, dim=1)
 		loss = criterion(y_scores, tags)
-
-		avg_acc += calculate_accuracy(y_hats, tags, data_name)
+		current_accuracy = calculate_accuracy(y_hats, tags, data_name)
+		avg_acc += current_accuracy
+		dev_500_acc.append(current_accuracy)
 		avg_loss += float(loss)
 
 		# Information printing:
@@ -145,8 +153,8 @@ def evaluate_accuracy(model, dev_dataset_loader, criterion, data_name, epoch):
 # lr = 0.001
 # embedding_length = 150
 # lstm_h_dim = 200
-
-batch_size = 100
+dev_500_acc = []
+batch_size = 500
 epochs = 1
 lr = 0.005
 embedding_len = 100
