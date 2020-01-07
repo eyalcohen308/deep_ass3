@@ -38,24 +38,25 @@ class BILSTMNet(nn.Module):
 
 		# Representation options before model:
 		if choice in ['a', 'c', 'd']:
-			self.word_embed = nn.Embedding(vocab_size, embedding_len)
+			self.word_embed = nn.Embedding(vocab_size, embedding_len).cuda()
 
 		if choice in ['b', 'd']:
-			self.char_embed = nn.Embedding(len(dicts.C2I), self.char_embedding_len)
-			self.chars_lstm = nn.LSTM(input_size=self.char_embedding_len, hidden_size=embedding_len, batch_first=True)
+			self.char_embed = nn.Embedding(len(dicts.C2I), self.char_embedding_len).cuda()
+			self.chars_lstm = nn.LSTM(input_size=self.char_embedding_len, hidden_size=embedding_len,
+			                          batch_first=True).cuda()
 
 		if choice == 'c':
-			self.prefix_embed = nn.Embedding(len(dicts.P2I), embedding_len)
-			self.suffix_embed = nn.Embedding(len(dicts.S2I), embedding_len)
+			self.prefix_embed = nn.Embedding(len(dicts.P2I), embedding_len).cuda()
+			self.suffix_embed = nn.Embedding(len(dicts.S2I), embedding_len).cuda()
 
 		if choice == 'd':
-			self.concat_linear_layer = nn.Linear(embedding_len * 2, embedding_len)
+			self.concat_linear_layer = nn.Linear(embedding_len * 2, embedding_len).cuda()
 
 		# Rest of the model:
 		self.bi_lstm = nn.LSTM(input_size=embedding_len, hidden_size=lstm_out_dim, bidirectional=True, num_layers=2,
-		                       batch_first=True)
-		self.out = nn.Linear(2 * lstm_out_dim, output_dim)
-		self.softmax = nn.LogSoftmax(dim=0)
+		                       batch_first=True).cuda()
+		self.out = nn.Linear(2 * lstm_out_dim, output_dim).cuda()
+		self.softmax = nn.LogSoftmax(dim=0).cuda()
 
 	def embed_lstm_a(self, sentence):
 		return self.word_embed(sentence)
@@ -63,7 +64,7 @@ class BILSTMNet(nn.Module):
 	def embed_lstm_b(self, sentence, total_seq_length, batch_size):
 		char_input = create_char_input(sentence, self.dicts)
 		words_len = torch.tensor([get_size_without_pad(self.dicts.C2I[PAD], word) for word in char_input])
-		embed_chars = self.char_embed(char_input)
+		embed_chars = self.char_embed(char_input.cuda())
 		# It's chars packing time:
 		packed_chars_input = pack_padded_sequence(embed_chars, words_len, batch_first=True,
 		                                          enforce_sorted=False)
@@ -73,15 +74,15 @@ class BILSTMNet(nn.Module):
 	def embed_lstm_c(self, sentence):
 		prefix_input, suffix_input = make_prefix_suffix_input(sentence, self.dicts)
 		embed_word_input = self.word_embed(sentence)
-		embed_prefix_input = self.prefix_embed(prefix_input)
-		embed_suffix_input = self.suffix_embed(suffix_input)
+		embed_prefix_input = self.prefix_embed(prefix_input.cuda())
+		embed_suffix_input = self.suffix_embed(suffix_input.cuda())
 		return embed_word_input + embed_prefix_input + embed_suffix_input
 
 	def embed_lstm_d(self, sentence, total_seq_length, batch_size):
 		lstm_a_output = self.embed_lstm_a(sentence)
 		lstm_b_output = self.embed_lstm_b(sentence, total_seq_length, batch_size)
 		concat_output = torch.cat((lstm_a_output, lstm_b_output), 2)
-		return self.concat_linear_layer(concat_output)
+		return self.concat_linear_layer(concat_output.cuda())
 
 	def forward(self, sentence):
 		# batch size for resize the shape at the end.
